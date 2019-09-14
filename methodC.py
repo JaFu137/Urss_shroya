@@ -228,7 +228,7 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
     # Corner plot
     try:
         fig = corner.corner(samples, show_titles=True, labels=label, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], truths=theta_max)
-        fig.savefig("output/Method_C2/" + filename + str(lam) + "_triangle.png")
+        fig.savefig("output/MethodC/" + filename + "_triangle.png")
         Corner = True
     except ValueError:
         Corner = False
@@ -265,7 +265,7 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
                          label=r'$1\sigma$ Posterior Spread')
 
     plt.legend(loc='upper left')
-    plt.savefig("output/Method_C2/" + filename + str(lam) + ".png")
+    plt.savefig("output/MethodC/" + filename + ".png")
     # plt.show(block=False)
     # plt.pause(3)
     plt.close()
@@ -281,7 +281,7 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
     final = np.array([a_cz, tau_cz, psi_cz, a_he, c_he, tau_he, psi_he])
 
     print("Wrinting...")
-    with open('output/method_C2/' + filename + str(lam) + '.csv', 'w') as csvfile:
+    with open('output/methodC/' + filename + '.csv', 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',')
         filewriter.writerow(['Parameter', 'Most-likely Model', '16th', '50th', '84th'])
         for i in range(ndim):
