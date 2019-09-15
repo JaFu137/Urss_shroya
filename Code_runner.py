@@ -27,7 +27,7 @@ for file in finished_files:
 def run(file):
     try:
         methodA.main(file, 1000, 500, 1000, spread=True)
-        methodC.main(file, 1000, 500, 1000, 58, spread=True)
+        # methodC.main(file, 1000, 500, 1000, 58, spread=True)
         print(file + ":Ok")
     except TypeError:
         print(file + ":skipped")
