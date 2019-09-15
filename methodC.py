@@ -193,8 +193,8 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
     results = fitters.least_square_fit(model_func, data[:, 2], filtered, data[:, 3], label, initial, max_, min_, report)
     sampler = fitters.mcmc_fit(model_func, results[0], results[1], nwalkers, ndim, nburns, niter, args=(data[:, 2], filtered, data[:, 3]))
     
-    samples = sampler.flatchain
-    sample = sampler.chain
+    flat_samples = sampler.flatchain
+    samples = sampler.chain
 
     ############
     # Plotting #
@@ -208,10 +208,10 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
             plt.title(label[i])
             plt.figure(label[i])
             for j in range(nwalkers):
-                plt.plot(sample[j, :, i], color="r", alpha=0.1)
+                plt.plot(samples[j, :, i], color="r", alpha=0.1)
             plt.savefig(label[i] + "_" + filename + ".png")
 
-    theta_max = samples[np.argmax(sampler.flatlnprobability)]  # Most likely parameters from mcmc
+    theta_max = flat_samples[np.argmax(sampler.flatlnprobability)]  # Most likely parameters from mcmc
 
     x = np.linspace(data[0, 2], np.max(data[:, 2]), 1000)
 
@@ -227,7 +227,7 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
 
     # Corner plot
     try:
-        fig = corner.corner(samples, show_titles=True, labels=label, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], truths=theta_max)
+        fig = corner.corner(flat_samples, show_titles=True, labels=label, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], truths=theta_max)
         fig.savefig("output/Method_C/" + filename + "_triangle.png")
         Corner = True
     except ValueError:
@@ -250,7 +250,7 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
 
     # Plotting model for all values taken by walkers
     if all_theta is True:
-        for theta in samples[np.random.randint(len(samples), size=500)]:
+        for theta in flat_samples[np.random.randint(len(flat_samples), size=500)]:
             plt.plot(x, model_func(theta, x), color="b", alpha=0.007)
     
     # Plotting MCMC fit model
@@ -260,7 +260,7 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
 
     # Plotting 1-sigma spread in model  
     if spread is True:
-        med_model, spread = fitters.sample_walkers(model_func, x, nwalkers, samples)
+        med_model, spread = fitters.sample_walkers(model_func, x, nwalkers, flat_samples)
         plt.fill_between(x, med_model - spread, med_model + spread, color='grey', alpha=0.5,
                          label=r'$1\sigma$ Posterior Spread')
 
@@ -272,21 +272,22 @@ def main(filename, nwalkers, nburns, niter, lam, plot_steps=False, report=None, 
     if Corner:
         plt.close(fig)
 
-    samples[:, 2] = np.exp(samples[:, 2])
+    flat_samples[:, 2] = np.exp(flat_samples[:, 2])
 
     # Gives 16th, 50th, 84th percentile values of each parameter
-    a_cz, tau_cz, psi_cz, a_he, c_he, tau_he, psi_he = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
-                                                            zip(*np.percentile(samples, [16, 50, 84],
-                                                            axis=0)))
-    final = np.array([a_cz, tau_cz, psi_cz, a_he, c_he, tau_he, psi_he])
+    mcmc = np.empty([ndim, 3])
+    q = np.empty([ndim, 2])
+    for i in range(ndim):
+        mcmc[i, :] = np.percentile(flat_samples[:, i], [16, 50, 84])
+        q[i, :] = np.diff(mcmc[i, :])
 
-    print("Wrinting...")
-    with open('output/method_C/' + filename + '.csv', 'w') as csvfile:
+
+    with open('output/method_A/' + filename + '.csv', 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',')
         filewriter.writerow(['Parameter', 'Most-likely Model', '16th', '50th', '84th'])
         for i in range(ndim):
-            filewriter.writerow([label[i], theta_max[i], final[i, 0], final[i, 1], final[i, 2]])
-
+            filewriter.writerow([label[i], theta_max[i], q[i, 0], mcmc[i, 1], q[i, 1]])
+    
     print("Finished")
 
 if __name__ == "__main__":

@@ -152,7 +152,7 @@ def main(filename, nwalkers, nburns, niter, plot_steps=False, report=None, all_t
     
     sampler = fitters.mcmc_fit(model_func, results[0], results[1], nwalkers, ndim, nburns, niter, args=(arr[:, 2], arr[:, 3], arr[:, 4]))
 
-    samples = sampler.flatchain
+    flat_samples = sampler.flatchain
     sample = sampler.chain
     
     ############
@@ -179,8 +179,9 @@ def main(filename, nwalkers, nburns, niter, plot_steps=False, report=None, all_t
     leastsq_he = model_func(results[0], x, mode="helium")
     leastsq_linear = model_func(results[0], x, mode="linear")
 
-    theta_max = samples[np.argmax(sampler.flatlnprobability)]  # Most likely parameters from mcmc
+    theta_max = flat_samples[np.argmax(sampler.flatlnprobability)]  # Most likely parameters from mcmc
     
+    print(theta_max)
     # MCMC most likely fit model
     emcee_data = model_func(theta_max, x)
     emcee_convec = model_func(theta_max, x, mode="convec")
@@ -189,7 +190,7 @@ def main(filename, nwalkers, nburns, niter, plot_steps=False, report=None, all_t
 
     # Corner plot
     try:
-        fig = corner.corner(samples, show_titles=True, labels=label, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], truths=theta_max)
+        fig = corner.corner(flat_samples, show_titles=True, labels=label, plot_datapoints=True, quantiles=[0.16, 0.5, 0.84], truths=theta_max)
         fig.savefig("output/Method_A/" + filename + "_triangle.png")
         Corner = True
     except ValueError:
@@ -221,7 +222,7 @@ def main(filename, nwalkers, nburns, niter, plot_steps=False, report=None, all_t
 
     # Plotting model for all values taken by walkers
     if all_theta is True:
-        for theta in samples[np.random.randint(len(samples), size=500)]:
+        for theta in flat_samples[np.random.randint(len(flat_samples), size=500)]:
             plt.plot(x, model_func(theta, x), color="b", alpha=0.007)
 
     # Plotting MCMC fit model
@@ -232,7 +233,7 @@ def main(filename, nwalkers, nburns, niter, plot_steps=False, report=None, all_t
 
     # Plotting 1-sigma spread in model  
     if spread is True:
-        med_model, spread = fitters.sample_walkers(model_func, x, nwalkers, samples)
+        med_model, spread = fitters.sample_walkers(model_func, x, nwalkers, flat_samples)
         plt.fill_between(x, med_model - spread, med_model + spread, color='grey', alpha=0.5,
                          label=r'$1\sigma$ Posterior Spread')
 
@@ -247,23 +248,26 @@ def main(filename, nwalkers, nburns, niter, plot_steps=False, report=None, all_t
     if Corner:
         plt.close(fig)
 
-    samples[:, 2] = np.exp(samples[:, 2])
+    # samples[:, 2] = np.exp(samples[:, 2])
 
     print("Wrinting...")
 
+    
     # Gives 16th, 50th, 84th percentile values of each parameter
-    a_0, a_1, a_cz, tau_cz, psi_cz, a_he, c_he, tau_he, psi_he = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
-                                                                zip(*np.percentile(samples, [16, 50, 84],
-                                                                axis=0)))
-    final = np.array([a_0, a_1, a_cz, tau_cz, psi_cz, a_he, c_he, tau_he, psi_he])
+    mcmc = np.empty([ndim, 3])
+    q = np.empty([ndim, 2])
+    for i in range(ndim):
+        mcmc[i, :] = np.percentile(flat_samples[:, i], [16, 50, 84])
+        q[i, :] = np.diff(mcmc[i, :])
+
 
     with open('output/method_A/' + filename + '.csv', 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',')
         filewriter.writerow(['Parameter', 'Most-likely Model', '16th', '50th', '84th'])
         for i in range(ndim):
-            filewriter.writerow([label[i], theta_max[i], final[i, 0], final[i, 1], final[i, 2]])
+            filewriter.writerow([label[i], theta_max[i], q[i, 0], mcmc[i, 1], q[i, 1]])
     
     print("Finished")
 
 if __name__ == "__main__":
-    main("sun", 1000, 500, 1000, spread=True, report="pretty_print")
+    main("data_cyg_A", 1000, 500, 1000, spread=True, report="pretty_print")

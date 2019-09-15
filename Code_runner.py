@@ -11,7 +11,7 @@ Run scripts on all .csv file in input_data folder three files at a time
 os.chdir("input_data")
 files = glob.glob("*.csv")
 os.chdir("../")
-os.chdir("output/method_A/")
+os.chdir("output/method_C/")
 finished_files = glob.glob("*.png")
 os.chdir("../")
 os.chdir("../")
@@ -26,8 +26,8 @@ for file in finished_files:
 
 def run(file):
     try:
-        methodA.main(file, 1000, 500, 1000, spread=True)
-        # methodC.main(file, 1000, 500, 1000, 58, spread=True)
+        # methodA.main(file, 1000, 500, 1000, spread=True)
+        methodC.main(file, 1000, 500, 1000, 58, spread=True)
         print(file + ":Ok")
     except TypeError:
         print(file + ":skipped")
