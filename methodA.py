@@ -181,7 +181,6 @@ def main(filename, nwalkers, nburns, niter, plot_steps=False, report=None, all_t
 
     theta_max = flat_samples[np.argmax(sampler.flatlnprobability)]  # Most likely parameters from mcmc
     
-    print(theta_max)
     # MCMC most likely fit model
     emcee_data = model_func(theta_max, x)
     emcee_convec = model_func(theta_max, x, mode="convec")
